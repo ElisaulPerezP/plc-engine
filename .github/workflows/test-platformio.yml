@@ -1,0 +1,49 @@
+# .github/workflows/platformio-ci.yml
+name: PlatformIO CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) Clona tu repo
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 2) Cachea la instalación de pip y de PlatformIO para acelerar builds
+      - name: Cache pip and PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+
+      # 3) Instala Python (recomendado 3.11 para compatibilidad)
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 4) Instala PlatformIO Core
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      # 5) (Opcional) Comprueba formato de tu código con clang-format
+      - name: Check C++ code format with clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+          find src/ test/ -name '*.cpp' -o -name '*.h' \
+            | xargs clang-format -style=file -n --Werror
+
+      # 6) Ejecuta tus tests nativos
+      - name: Run native PlatformIO tests
+        run: pio test -e native
